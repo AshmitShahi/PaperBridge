@@ -1,0 +1,106 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * PAPERBRIDGE SECURITY RULES
+     *
+     * Core Philosophy:
+     * This ruleset implements a strict ownership-based model for user data while maintaining 
+     * a public repository for research paper metadata. Security is enforced primarily 
+     * through path-based authorization and internal relational field validation.
+     *
+     * Data Structure:
+     * - /papers/{paperId}: Publicly readable metadata for research papers.
+     * - /users/{userId}: Private user profiles containing preferences and bookmarks.
+     * - /users/{userId}/searchHistory/{historyId}: Private, user-specific search logs.
+     *
+     * Key Security Decisions:
+     * 1. Public Read Access: The research paper library is globally accessible to encourage
+     *    information sharing, but writes are restricted.
+     * 2. Path-Based Ownership: User data and subcollections (search history) are secured 
+     *    by matching the document path wildcards directly against the authenticated user's UID.
+     * 3. Relational Integrity: On creation and update, rules enforce that internal fields 
+     *    (like userId) match the document's path and remain immutable to prevent data hijacking.
+     * 4. Structural Segregation: User-specific data is nested under unique user IDs, 
+     *    ensuring that list operations are naturally scoped to the owner.
+     *
+     * Denormalization for Authorization:
+     * To ensure fast and independent security checks, the 'userId' is denormalized 
+     * into search history documents. This allows for immediate validation of the 
+     * relationship without requiring additional document lookups.
+     */
+
+    // --- Helper Functions ---
+
+    /** @description Checks if the request is from an authenticated user. */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /** @description Checks if the provided ID matches the authenticated user's UID. */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /** @description Checks ownership and ensures the document exists for state-changing operations. */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    // --- Collection Rules ---
+
+    /**
+     * @description Publicly accessible research paper metadata and AI summaries.
+     * @path /papers/{paperId}
+     * @allow get, list: if true; (Public access)
+     * @deny create, update, delete: if false; (Restricted to admin/automated processes)
+     * @principle Public consumption with read-only client access.
+     */
+    match /papers/{paperId} {
+      allow get, list: if true;
+      
+      // CRITICAL: Cannot implement owner-only writes. The 'Paper' entity is missing an 'ownerId' or 'authorId' field.
+      allow create, update, delete: if false; // TODO: Add owner validation once the schema is updated with an ownership field.
+    }
+
+    /**
+     * @description User profile management for authenticated users.
+     * @path /users/{userId}
+     * @allow create: if isOwner(userId) && request.resource.data.id == userId;
+     * @allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+     * @deny get, list, delete: if not the profile owner.
+     * @principle Path-based ownership and relational integrity via ID immutability.
+     */
+    match /users/{userId} {
+      allow get, list: if isOwner(userId);
+      
+      // Self-creation: User can only create their own profile; must set internal ID to match path.
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      
+      // Update/Delete: Restricted to owner; ID field cannot be changed.
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Private search history entries nested under the user's tree.
+     * @path /users/{userId}/searchHistory/{historyId}
+     * @allow get, list: if isOwner(userId);
+     * @allow create: if isOwner(userId) && request.resource.data.userId == userId;
+     * @deny update: if the userId field is being modified.
+     * @principle Hierarchical ownership and denormalized relational validation.
+     */
+    match /users/{userId}/searchHistory/{historyId} {
+      allow get, list: if isOwner(userId);
+      
+      // Relational check: Ensure the internal userId field matches the parent path.
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      
+      // Immutability: Prevent moving history records between users.
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      
+      allow delete: if isExistingOwner(userId);
+    }
+  }
+}
