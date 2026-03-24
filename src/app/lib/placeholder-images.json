@@ -1,0 +1,16 @@
+{
+  "placeholderImages": [
+    {
+      "id": "hero-bg",
+      "description": "Clean academic library or workspace",
+      "imageUrl": "https://picsum.photos/seed/paperbridge-hero/1200/600",
+      "imageHint": "library research"
+    },
+    {
+      "id": "empty-state",
+      "description": "Minimalist searching illustration",
+      "imageUrl": "https://picsum.photos/seed/paperbridge-empty/600/400",
+      "imageHint": "searching document"
+    }
+  ]
+}
