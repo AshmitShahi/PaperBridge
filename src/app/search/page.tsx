@@ -1,16 +1,16 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { semanticPaperSearch, type SemanticPaperSearchOutput } from "@/ai/flows/semantic-paper-search-flow";
 import { PaperCard } from "@/components/paper-card";
 import { FilterSidebar } from "@/components/filter-sidebar";
 import { SearchInput } from "@/components/search-input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Loader2, AlertCircle, SearchIcon } from "lucide-react";
+import { AlertCircle, SearchIcon } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-export default function SearchResults() {
+function SearchContent() {
   const searchParams = useSearchParams();
   const query = searchParams.get("q") || "";
   
@@ -21,10 +21,14 @@ export default function SearchResults() {
   useEffect(() => {
     if (!query) return;
 
-    // Save to history
-    const history = JSON.parse(localStorage.getItem("search_history") || "[]");
-    const updatedHistory = [query, ...history.filter((h: string) => h !== query)].slice(0, 10);
-    localStorage.setItem("search_history", JSON.stringify(updatedHistory));
+    // Save to local history for the dashboard
+    try {
+      const history = JSON.parse(localStorage.getItem("search_history") || "[]");
+      const updatedHistory = [query, ...history.filter((h: string) => h !== query)].slice(0, 10);
+      localStorage.setItem("search_history", JSON.stringify(updatedHistory));
+    } catch (e) {
+      console.warn("Could not save search history", e);
+    }
 
     const performSearch = async () => {
       setLoading(true);
@@ -33,8 +37,8 @@ export default function SearchResults() {
         const data = await semanticPaperSearch({ query });
         setResults(data);
       } catch (err) {
-        console.error(err);
-        setError("Failed to retrieve papers. Please try again later or refine your search.");
+        console.error("Search Error:", err);
+        setError("We encountered an error retrieving research papers. Please try again in a moment.");
       } finally {
         setLoading(false);
       }
@@ -54,7 +58,9 @@ export default function SearchResults() {
           <SearchInput initialValue={query} variant="small" />
         </div>
         <div className="hidden md:block text-right">
-          <p className="text-sm font-medium text-muted-foreground">Found {results.length} relevant publications</p>
+          <p className="text-sm font-medium text-muted-foreground">
+            {loading ? "Discovering papers..." : `Found ${results.length} relevant publications`}
+          </p>
         </div>
       </div>
 
@@ -81,7 +87,7 @@ export default function SearchResults() {
           ) : error ? (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Error</AlertTitle>
+              <AlertTitle>Search Failed</AlertTitle>
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           ) : results.length === 0 ? (
@@ -100,5 +106,17 @@ export default function SearchResults() {
         </main>
       </div>
     </div>
+  );
+}
+
+export default function SearchResults() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    }>
+      <SearchContent />
+    </Suspense>
   );
 }
