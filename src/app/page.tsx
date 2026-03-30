@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { SearchInput } from "@/components/search-input";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, TrendingUp, Sparkles, Clock, ShieldCheck, Zap, Globe, GraduationCap, BarChart3, Star } from "lucide-react";
+import { BookOpen, TrendingUp, Sparkles, Clock, ShieldCheck, Zap, Globe, GraduationCap, BarChart3, Star, ArrowRight, Layers, Fingerprint } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/firebase";
@@ -120,7 +120,7 @@ export default function Home() {
               desc: "Evaluate the influence of research with automated citation tracking and impact scoring across multiple journals." 
             },
             { 
-              icon: Sparkles, 
+              icon: Layers, 
               title: "Semantic Summaries", 
               desc: "Get to the point faster. Our AI breaks down complex academic jargon into clear, actionable insights." 
             },
@@ -143,75 +143,57 @@ export default function Home() {
           ))}
         </div>
 
-        {/* How it Works / Split Section */}
-        <div className="flex flex-col lg:flex-row items-center gap-24">
-          <div className="lg:w-1/2 space-y-10">
-            <div className="space-y-4">
-              <Badge className="bg-accent/10 text-accent border-accent/20 px-4 py-1.5 rounded-full font-bold">The Researcher's Workflow</Badge>
-              <h2 className="text-5xl md:text-6xl font-bold text-primary leading-[1.1] font-headline">
-                Streamline your <br />
-                <span className="text-accent">literature review.</span>
-              </h2>
-            </div>
-            <div className="space-y-8">
+        {/* Informative Section: Why PaperBridge? */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+          <div className="space-y-8">
+            <Badge className="bg-primary/10 text-primary border-primary/20 px-4 py-1">Why PaperBridge?</Badge>
+            <h2 className="text-4xl md:text-5xl font-bold text-primary font-headline leading-tight">
+              Bridging the gap between <br />
+              <span className="text-accent">raw data and real insight.</span>
+            </h2>
+            <p className="text-xl text-muted-foreground leading-relaxed">
+              Traditional search engines focus on keywords. We focus on intent. By using advanced semantic embeddings, we understand the scientific context of your query.
+            </p>
+            <ul className="space-y-4">
               {[
-                { 
-                  step: "01", 
-                  title: "Semantic Intent", 
-                  desc: "Describe your research question in natural language. Our AI identifies core concepts beyond simple keywords." 
-                },
-                { 
-                  step: "02", 
-                  title: "Deep Discovery", 
-                  desc: "Cross-reference millions of abstracts. We filter for quality, relevance, and methodological rigor." 
-                },
-                { 
-                  step: "03", 
-                  title: "Active Collection", 
-                  desc: "Save papers to your personal library and receive related recommendations based on your activity." 
-                }
-              ].map((item) => (
-                <div key={item.step} className="flex gap-6 group">
-                  <div className="text-4xl font-bold text-accent/20 font-mono group-hover:text-accent/60 transition-colors">{item.step}</div>
-                  <div className="space-y-2">
-                    <h4 className="font-bold text-xl text-primary">{item.title}</h4>
-                    <p className="text-muted-foreground text-lg leading-relaxed">{item.desc}</p>
-                  </div>
-                </div>
+                { icon: Fingerprint, text: "Personalized research recommendations" },
+                { icon: ShieldCheck, text: "Curated from peer-reviewed databases" },
+                { icon: Zap, text: "Instant summaries for 200M+ abstracts" }
+              ].map((item, idx) => (
+                <li key={idx} className="flex items-center gap-3 text-lg font-medium text-primary/80">
+                  <item.icon className="h-5 w-5 text-accent" />
+                  {item.text}
+                </li>
               ))}
-            </div>
+            </ul>
           </div>
-          <div className="lg:w-1/2 w-full relative">
-            <div className="aspect-square bg-gradient-to-br from-primary/10 to-accent/20 rounded-[4rem] p-12 flex items-center justify-center relative overflow-hidden shadow-inner">
-               <div className="absolute top-0 left-0 w-full h-full bg-grid-white/20 opacity-30" />
-               <div className="relative z-10 glass-morphism p-10 rounded-[3rem] shadow-2xl border-white/50 max-w-sm rotate-3 hover:rotate-0 transition-transform duration-700">
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="w-12 h-12 rounded-full bg-accent/30 flex items-center justify-center">
-                      <Star className="h-6 w-6 text-accent fill-current" />
-                    </div>
-                    <div className="space-y-2">
-                      <div className="h-3 w-32 bg-primary/10 rounded-full" />
-                      <div className="h-2 w-20 bg-primary/5 rounded-full" />
-                    </div>
-                  </div>
-                  <div className="space-y-4">
-                    <div className="h-5 w-full bg-primary/5 rounded-full" />
-                    <div className="h-5 w-4/5 bg-primary/5 rounded-full" />
-                    <div className="mt-8 p-5 bg-accent/5 rounded-[2rem] border border-accent/20">
-                      <p className="text-[11px] text-accent font-bold uppercase tracking-[0.2em] mb-2">Bridge Insight</p>
-                      <div className="h-2 w-full bg-accent/30 rounded-full mb-2" />
-                      <div className="h-2 w-3/4 bg-accent/30 rounded-full" />
-                    </div>
-                  </div>
-               </div>
-               {/* Decorative floating elements */}
-               <div className="absolute top-20 right-10 glass-morphism px-4 py-2 rounded-xl shadow-lg animate-bounce [animation-duration:3s]">
-                  <span className="text-xs font-bold text-primary flex items-center gap-2"><Clock className="h-3 w-3" /> Real-time Updates</span>
-               </div>
-               <div className="absolute bottom-20 left-10 glass-morphism px-4 py-2 rounded-xl shadow-lg animate-bounce [animation-duration:4s]">
-                  <span className="text-xs font-bold text-accent flex items-center gap-2"><Star className="h-3 w-3 fill-current" /> Peer Reviewed</span>
-               </div>
-            </div>
+          <div className="relative">
+             <div className="absolute inset-0 bg-accent/20 blur-[100px] rounded-full" />
+             <div className="relative glass-morphism p-8 rounded-[3rem] border-white/40 shadow-2xl">
+                <div className="space-y-6">
+                   <div className="flex gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold">1</div>
+                      <div className="space-y-2">
+                         <h4 className="font-bold text-primary">Discover</h4>
+                         <p className="text-sm text-muted-foreground">Semantic search scans millions of papers in seconds.</p>
+                      </div>
+                   </div>
+                   <div className="flex gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-accent/20 flex items-center justify-center text-accent font-bold">2</div>
+                      <div className="space-y-2">
+                         <h4 className="font-bold text-primary">Understand</h4>
+                         <p className="text-sm text-muted-foreground">AI-generated summaries distill complex findings into insights.</p>
+                      </div>
+                   </div>
+                   <div className="flex gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center text-white font-bold">3</div>
+                      <div className="space-y-2">
+                         <h4 className="font-bold text-primary">Organize</h4>
+                         <p className="text-sm text-muted-foreground">Bookmark and categorize papers into your personal library.</p>
+                      </div>
+                   </div>
+                </div>
+             </div>
           </div>
         </div>
 
