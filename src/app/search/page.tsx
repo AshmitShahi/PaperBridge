@@ -3,12 +3,14 @@
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 import { semanticPaperSearch, type SemanticPaperSearchOutput } from "@/ai/flows/semantic-paper-search-flow";
+import { getPaperBridgeAiInsight } from "@/ai/flows/paperbridge-ai-chat-flow";
 import { PaperCard } from "@/components/paper-card";
 import { FilterSidebar } from "@/components/filter-sidebar";
 import { SearchInput } from "@/components/search-input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, SearchIcon } from "lucide-react";
+import { AlertCircle, SearchIcon, Sparkles, BrainCircuit } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 function SearchContent() {
   const searchParams = useSearchParams();
@@ -17,6 +19,8 @@ function SearchContent() {
   const [results, setResults] = useState<SemanticPaperSearchOutput>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [aiInsight, setAiInsight] = useState<string | null>(null);
+  const [isAiLoading, setIsAiLoading] = useState(false);
 
   useEffect(() => {
     if (!query) return;
@@ -33,9 +37,25 @@ function SearchContent() {
     const performSearch = async () => {
       setLoading(true);
       setError(null);
+      setAiInsight(null);
       try {
         const data = await semanticPaperSearch({ query });
         setResults(data);
+        
+        // After getting results, fetch AI insight if papers were found
+        if (data.length > 0) {
+          setIsAiLoading(true);
+          const insight = await getPaperBridgeAiInsight({ 
+            query, 
+            papers: data.map(p => ({ 
+              title: p.title, 
+              abstract: p.abstract, 
+              aiSummary: p.aiSummary 
+            })) 
+          });
+          setAiInsight(insight.explanation);
+          setIsAiLoading(false);
+        }
       } catch (err) {
         console.error("Search Error:", err);
         setError("We encountered an error retrieving research papers. Please try again in a moment.");
@@ -69,7 +89,32 @@ function SearchContent() {
           <FilterSidebar />
         </aside>
 
-        <main className="lg:w-3/4 flex-grow">
+        <main className="lg:w-3/4 flex-grow space-y-8">
+          {/* PaperBridge AI Insight Section */}
+          {(isAiLoading || aiInsight) && (
+            <Card className="border-accent/20 bg-accent/5 overflow-hidden animate-fade-in shadow-lg">
+              <CardHeader className="bg-white/50 border-b border-accent/10 py-4">
+                <CardTitle className="text-lg font-bold flex items-center gap-2 text-primary">
+                  <BrainCircuit className="h-5 w-5 text-accent" />
+                  PaperBridge AI Insight
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                {isAiLoading ? (
+                  <div className="space-y-4">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-5/6" />
+                    <Skeleton className="h-4 w-4/6" />
+                  </div>
+                ) : (
+                  <div className="prose prose-sm max-w-none text-foreground/80 leading-relaxed whitespace-pre-wrap font-medium">
+                    {aiInsight}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {[...Array(6)].map((_, i) => (
