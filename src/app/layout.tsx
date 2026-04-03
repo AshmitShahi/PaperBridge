@@ -3,6 +3,7 @@ import './globals.css';
 import { Navbar } from '@/components/navbar';
 import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
+import { ChatBot } from '@/components/chat-bot';
 
 export const metadata: Metadata = {
   title: 'PaperBridge | Discover Research Semantically',
@@ -27,6 +28,7 @@ export default function RootLayout({
           <main className="min-h-screen">
             {children}
           </main>
+          <ChatBot />
           <Toaster />
           <footer className="bg-white border-t py-12 px-4 text-center mt-20">
             <div className="max-w-7xl mx-auto">
