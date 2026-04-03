@@ -20,13 +20,15 @@ import {
   Sparkles,
   ChevronRight,
   Upload,
-  X
+  X,
+  FileCode
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function PaperEvaluatorPage() {
   const [title, setTitle] = useState("");
   const [abstract, setAbstract] = useState("");
+  const [pdfDataUri, setPdfDataUri] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [evaluation, setEvaluation] = useState<PaperEvaluationOutput | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -37,46 +39,64 @@ export default function PaperEvaluatorPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Basic support for text files for now
-    if (file.type !== "text/plain" && !file.name.endsWith(".txt") && !file.name.endsWith(".md")) {
-      toast({
-        title: "Format not supported",
-        description: "Please upload a .txt or .md file. PDF support coming soon.",
-        variant: "destructive",
-      });
+    setFileName(file.name);
+
+    // Support for PDFs
+    if (file.type === "application/pdf") {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const result = event.target?.result as string;
+        setPdfDataUri(result);
+        setAbstract(""); // PDF is handled via media part
+        
+        // Try to use filename as title if empty
+        if (!title) {
+          setTitle(file.name.replace(/\.[^/.]+$/, "").replace(/_/g, " ").replace(/-/g, " "));
+        }
+
+        toast({
+          title: "PDF Uploaded",
+          description: `${file.name} is ready for AI analysis.`,
+        });
+      };
+      reader.readAsDataURL(file);
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const content = event.target?.result as string;
-      setAbstract(content);
-      setFileName(file.name);
-      
-      // Try to guess title from first line if title is empty
-      const lines = content.split('\n').filter(l => l.trim().length > 0);
-      if (lines.length > 0 && !title) {
-        setTitle(lines[0].substring(0, 100));
-      }
+    // Support for text files
+    if (file.type === "text/plain" || file.name.endsWith(".txt") || file.name.endsWith(".md")) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const content = event.target?.result as string;
+        setAbstract(content);
+        setPdfDataUri(null);
+        
+        const lines = content.split('\n').filter(l => l.trim().length > 0);
+        if (lines.length > 0 && !title) {
+          setTitle(lines[0].substring(0, 100));
+        }
 
-      toast({
-        title: "File Uploaded",
-        description: `Successfully extracted text from ${file.name}`,
-      });
-    };
-    reader.onerror = () => {
-      toast({
-        title: "Error",
-        description: "Could not read the file.",
-        variant: "destructive",
-      });
-    };
-    reader.readAsText(file);
+        toast({
+          title: "Text File Uploaded",
+          description: `Successfully extracted text from ${file.name}`,
+        });
+      };
+      reader.readAsText(file);
+      return;
+    }
+
+    toast({
+      title: "Format not supported",
+      description: "Please upload a .pdf, .txt, or .md file.",
+      variant: "destructive",
+    });
+    setFileName(null);
   };
 
   const clearFile = () => {
     setFileName(null);
     setAbstract("");
+    setPdfDataUri(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -84,10 +104,19 @@ export default function PaperEvaluatorPage() {
 
   const handleEvaluate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !abstract.trim()) {
+    if (!title.trim()) {
       toast({
-        title: "Missing Information",
-        description: "Please provide both a title and an abstract (or upload a file) to evaluate.",
+        title: "Missing Title",
+        description: "Please provide a title for your research paper.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!abstract.trim() && !pdfDataUri) {
+      toast({
+        title: "No Content",
+        description: "Please provide an abstract or upload a PDF document.",
         variant: "destructive",
       });
       return;
@@ -95,7 +124,11 @@ export default function PaperEvaluatorPage() {
 
     setIsLoading(true);
     try {
-      const result = await evaluateResearchPaper({ title, abstract });
+      const result = await evaluateResearchPaper({ 
+        title, 
+        abstract: abstract || undefined, 
+        pdfDataUri: pdfDataUri || undefined 
+      });
       setEvaluation(result);
       toast({
         title: "Evaluation Complete",
@@ -105,7 +138,7 @@ export default function PaperEvaluatorPage() {
       console.error(error);
       toast({
         title: "Evaluation Failed",
-        description: "An error occurred while analyzing the paper. Please try again.",
+        description: "An error occurred while analyzing the paper. Please ensure the file size is reasonable.",
         variant: "destructive",
       });
     } finally {
@@ -149,7 +182,7 @@ export default function PaperEvaluatorPage() {
                   ref={fileInputRef} 
                   onChange={handleFileChange} 
                   className="hidden" 
-                  accept=".txt,.md"
+                  accept=".pdf,.txt,.md"
                 />
                 <Button 
                   variant="outline" 
@@ -158,18 +191,22 @@ export default function PaperEvaluatorPage() {
                   className="rounded-full gap-2 border-accent/20 hover:bg-accent/5"
                 >
                   <Upload className="h-3.5 w-3.5" />
-                  Upload
+                  Upload PDF/Text
                 </Button>
               </div>
               <CardDescription>
-                Provide the details or upload a .txt/.md file of your research paper.
+                Provide details or upload your PDF, .txt, or .md research file.
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-8 space-y-6">
               {fileName && (
                 <div className="flex items-center justify-between p-3 bg-accent/5 border border-accent/20 rounded-xl animate-in fade-in zoom-in duration-300">
                   <div className="flex items-center gap-2 overflow-hidden">
-                    <FileText className="h-4 w-4 text-accent shrink-0" />
+                    {fileName.endsWith('.pdf') ? (
+                      <FileCode className="h-4 w-4 text-accent shrink-0" />
+                    ) : (
+                      <FileText className="h-4 w-4 text-accent shrink-0" />
+                    )}
                     <span className="text-xs font-bold text-primary truncate">{fileName}</span>
                   </div>
                   <Button variant="ghost" size="icon" onClick={clearFile} className="h-6 w-6 rounded-full">
@@ -187,15 +224,29 @@ export default function PaperEvaluatorPage() {
                   className="rounded-xl border-muted focus-visible:ring-accent h-12"
                 />
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-bold text-primary/70 uppercase tracking-wider ml-1">Academic Abstract / Content</label>
-                <Textarea 
-                  placeholder="Paste the abstract here or upload a file..." 
-                  value={abstract}
-                  onChange={(e) => setAbstract(e.target.value)}
-                  className="rounded-xl border-muted focus-visible:ring-accent min-h-[300px] text-sm leading-relaxed"
-                />
-              </div>
+
+              {!pdfDataUri && (
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-primary/70 uppercase tracking-wider ml-1">Academic Abstract / Content</label>
+                  <Textarea 
+                    placeholder="Paste the abstract here or upload a file..." 
+                    value={abstract}
+                    onChange={(e) => setAbstract(e.target.value)}
+                    className="rounded-xl border-muted focus-visible:ring-accent min-h-[300px] text-sm leading-relaxed"
+                  />
+                </div>
+              )}
+
+              {pdfDataUri && (
+                <div className="p-6 border-2 border-dashed border-accent/20 rounded-[2rem] bg-accent/5 flex flex-col items-center justify-center text-center space-y-3">
+                  <FileCode className="h-12 w-12 text-accent opacity-50" />
+                  <div>
+                    <p className="text-sm font-bold text-primary">PDF Loaded Successfully</p>
+                    <p className="text-xs text-muted-foreground">The AI will evaluate the full document content.</p>
+                  </div>
+                </div>
+              )}
+
               <Button 
                 onClick={handleEvaluate}
                 disabled={isLoading}
@@ -204,7 +255,7 @@ export default function PaperEvaluatorPage() {
                 {isLoading ? (
                   <>
                     <Loader2 className="h-5 w-5 animate-spin" />
-                    Analyzing Research...
+                    Analyzing Document...
                   </>
                 ) : (
                   <>
@@ -345,7 +396,7 @@ export default function PaperEvaluatorPage() {
               <FileText className="h-20 w-20 text-muted-foreground/20 mb-6" />
               <h3 className="text-2xl font-bold text-primary mb-2">Ready for Review</h3>
               <p className="text-muted-foreground max-w-sm">
-                Submit your research paper details or upload a file on the left to receive a professional, AI-powered academic evaluation.
+                Submit your research paper details or upload a PDF/Text file on the left to receive a professional, AI-powered academic evaluation.
               </p>
             </div>
           )}

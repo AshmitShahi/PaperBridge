@@ -2,6 +2,7 @@
 /**
  * @fileOverview This file defines a Genkit flow for critically evaluating research papers.
  * It provides structured feedback on strengths, weaknesses, novelty, and publication readiness.
+ * Supports text-based input and PDF document uploads.
  */
 
 import { ai } from '@/ai/genkit';
@@ -9,7 +10,8 @@ import { z } from 'genkit';
 
 const PaperEvaluationInputSchema = z.object({
   title: z.string().describe('The title of the research paper.'),
-  abstract: z.string().describe('The abstract or full text of the research paper.'),
+  abstract: z.string().optional().describe('The abstract or extracted text of the research paper.'),
+  pdfDataUri: z.string().optional().describe("The research paper as a PDF, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:application/pdf;base64,<encoded_data>'."),
   authors: z.array(z.string()).optional().describe('List of authors.'),
   publicationYear: z.number().optional().describe('Year of publication.'),
 });
@@ -44,24 +46,26 @@ const prompt = ai.definePrompt({
   input: { schema: PaperEvaluationInputSchema },
   output: { schema: PaperEvaluationOutputSchema },
   prompt: `You are an elite academic peer reviewer for high-impact journals (e.g., Nature, NEJM, CVPR, NeurIPS).
-Your task is to critically evaluate the provided research paper metadata and provide structured, actionable feedback to improve its quality and publication readiness.
+Your task is to critically evaluate the provided research paper and provide structured, actionable feedback to improve its quality and publication readiness.
 
 Paper Details:
 Title: {{{title}}}
-Abstract: {{{abstract}}}
+{{#if abstract}}Abstract/Text: {{{abstract}}}{{/if}}
+{{#if pdfDataUri}}A full PDF document has been provided for your review: {{media url=pdfDataUri}}{{/if}}
 {{#if authors}}Authors: {{#each authors}}{{{this}}}{{#unless @last}}, {{/unless}}{{/each}}{{/if}}
 {{#if publicationYear}}Year: {{{publicationYear}}}{{/if}}
 
 STRICT GUIDELINES:
 1. Be precise, critical, and constructive.
-2. Do NOT give generic feedback (e.g., "The paper is good").
-3. Do NOT hallucinate missing details. If a methodology or metric is missing, explicitly state "Methodology is not clearly defined" or "Evaluation metrics are missing".
-4. Use a professional academic tone, suitable for students and researchers.
-5. Focus on improving the paper for real-world publication.
-6. If the paper lacks depth, state it clearly.
-7. If methodology is weak or unclear, highlight it.
-8. If results are missing or not convincing, mention it explicitly.
-9. If references are mentioned but seem outdated or insufficient based on the topic context, mention it.
+2. Use the provided text (Abstract/Text) and/or the uploaded PDF document as your source of truth.
+3. Do NOT give generic feedback (e.g., "The paper is good").
+4. Do NOT hallucinate missing details. If a methodology or metric is missing, explicitly state "Methodology is not clearly defined" or "Evaluation metrics are missing".
+5. Use a professional academic tone, suitable for students and researchers.
+6. Focus on improving the paper for real-world publication.
+7. If the paper lacks depth, state it clearly.
+8. If methodology is weak or unclear, highlight it.
+9. If results are missing or not convincing, mention it explicitly.
+10. If references are mentioned but seem outdated or insufficient based on the topic context, mention it.
 
 Structure your response strictly according to the output schema.`,
 });
