@@ -25,7 +25,9 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB limit to accommodate larger PDFs
+// Set a safe limit for the client side. 
+// Note: Base64 encoding adds ~33% overhead, so a 15MB file becomes ~20MB.
+const MAX_FILE_SIZE = 15 * 1024 * 1024; 
 
 export default function PaperEvaluatorPage() {
   const [title, setTitle] = useState("");
@@ -140,12 +142,18 @@ export default function PaperEvaluatorPage() {
         description: "Your paper has been critically reviewed by PaperBridge AI.",
       });
     } catch (error: any) {
-      console.error(error);
-      const isSizeError = error?.message?.includes('Body exceeded') || error?.message?.includes('Too Large');
+      console.error("Evaluation Error:", error);
+      
+      // Detailed error detection for Server Action limits
+      const isSizeError = 
+        error?.message?.toLowerCase().includes('limit') || 
+        error?.message?.toLowerCase().includes('large') ||
+        error?.message?.toLowerCase().includes('exceeded');
+
       toast({
-        title: isSizeError ? "Paper Too Large" : "Evaluation Failed",
+        title: isSizeError ? "Submission Limit" : "Evaluation Failed",
         description: isSizeError 
-          ? "The document is too large for the current limit. Try a smaller version or a text-only abstract."
+          ? "The server rejected the request due to size. If this persists, please try a smaller PDF or a text abstract."
           : "An error occurred while analyzing the paper. Please try again.",
         variant: "destructive",
       });
