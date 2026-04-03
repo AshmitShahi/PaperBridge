@@ -8,16 +8,11 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  // In Next.js 14.1+, this is the standard location for Server Action body limits.
-  serverActions: {
-    bodySizeLimit: '50mb',
-  },
-  // In some environments or older Next.js 14 versions, it might still look here.
   experimental: {
     serverActions: {
       bodySizeLimit: '50mb',
     },
-  } as any,
+  },
   images: {
     remotePatterns: [
       {
