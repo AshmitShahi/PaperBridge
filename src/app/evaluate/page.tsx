@@ -25,6 +25,8 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB limit for safety
+
 export default function PaperEvaluatorPage() {
   const [title, setTitle] = useState("");
   const [abstract, setAbstract] = useState("");
@@ -39,21 +41,27 @@ export default function PaperEvaluatorPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (file.size > MAX_FILE_SIZE) {
+      toast({
+        title: "File too large",
+        description: "Please upload a paper smaller than 15MB.",
+        variant: "destructive",
+      });
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
     setFileName(file.name);
 
-    // Support for PDFs
     if (file.type === "application/pdf") {
       const reader = new FileReader();
       reader.onload = (event) => {
         const result = event.target?.result as string;
         setPdfDataUri(result);
-        setAbstract(""); // PDF is handled via media part
-        
-        // Try to use filename as title if empty
+        setAbstract("");
         if (!title) {
           setTitle(file.name.replace(/\.[^/.]+$/, "").replace(/_/g, " ").replace(/-/g, " "));
         }
-
         toast({
           title: "PDF Uploaded",
           description: `${file.name} is ready for AI analysis.`,
@@ -63,19 +71,16 @@ export default function PaperEvaluatorPage() {
       return;
     }
 
-    // Support for text files
     if (file.type === "text/plain" || file.name.endsWith(".txt") || file.name.endsWith(".md")) {
       const reader = new FileReader();
       reader.onload = (event) => {
         const content = event.target?.result as string;
         setAbstract(content);
         setPdfDataUri(null);
-        
         const lines = content.split('\n').filter(l => l.trim().length > 0);
         if (lines.length > 0 && !title) {
           setTitle(lines[0].substring(0, 100));
         }
-
         toast({
           title: "Text File Uploaded",
           description: `Successfully extracted text from ${file.name}`,
@@ -134,11 +139,14 @@ export default function PaperEvaluatorPage() {
         title: "Evaluation Complete",
         description: "Your paper has been critically reviewed by PaperBridge AI.",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
+      const isSizeError = error?.message?.includes('Body exceeded');
       toast({
-        title: "Evaluation Failed",
-        description: "An error occurred while analyzing the paper. Please ensure the file size is reasonable.",
+        title: isSizeError ? "Paper Too Large" : "Evaluation Failed",
+        description: isSizeError 
+          ? "The document is too large for the current limit. Try a smaller version or a text-only abstract."
+          : "An error occurred while analyzing the paper. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -168,7 +176,6 @@ export default function PaperEvaluatorPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
-        {/* Input Section */}
         <div className="lg:col-span-5 space-y-8">
           <Card className="rounded-[2.5rem] border-primary/5 shadow-xl glass-morphism overflow-hidden">
             <CardHeader className="bg-primary/5 border-b border-primary/5 pb-8">
@@ -195,7 +202,7 @@ export default function PaperEvaluatorPage() {
                 </Button>
               </div>
               <CardDescription>
-                Provide details or upload your PDF, .txt, or .md research file.
+                Provide details or upload your PDF, .txt, or .md research file (max 15MB).
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-8 space-y-6">
@@ -268,11 +275,9 @@ export default function PaperEvaluatorPage() {
           </Card>
         </div>
 
-        {/* Results Section */}
         <div className="lg:col-span-7 space-y-8 min-h-[600px]">
           {evaluation ? (
             <div className="space-y-8 animate-fade-in">
-              {/* Readiness Score Card */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Card className="rounded-3xl border-primary/5 shadow-lg bg-white p-6">
                   <div className="flex flex-col items-center text-center space-y-2">
@@ -299,7 +304,6 @@ export default function PaperEvaluatorPage() {
                 </Card>
               </div>
 
-              {/* Summary */}
               <Card className="rounded-[2rem] border-primary/5 shadow-lg bg-white overflow-hidden">
                 <div className="p-8 space-y-6">
                   <div className="space-y-2">
@@ -345,7 +349,6 @@ export default function PaperEvaluatorPage() {
                 </div>
               </Card>
 
-              {/* Suggestions & Missing Elements */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <Card className="rounded-[2rem] border-primary/5 shadow-lg bg-white p-8 space-y-4">
                   <h4 className="text-sm font-bold text-primary uppercase tracking-wider flex items-center gap-2">
@@ -375,7 +378,6 @@ export default function PaperEvaluatorPage() {
                 </Card>
               </div>
 
-              {/* Enhancements */}
               <Card className="rounded-[2rem] border-accent/20 bg-accent/5 p-8 space-y-4">
                 <h4 className="text-lg font-bold text-primary flex items-center gap-2">
                   <TrendingUp className="h-6 w-6 text-accent" />
