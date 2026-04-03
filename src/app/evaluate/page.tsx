@@ -25,7 +25,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB limit for safety
+const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB limit to accommodate larger PDFs
 
 export default function PaperEvaluatorPage() {
   const [title, setTitle] = useState("");
@@ -141,7 +141,7 @@ export default function PaperEvaluatorPage() {
       });
     } catch (error: any) {
       console.error(error);
-      const isSizeError = error?.message?.includes('Body exceeded');
+      const isSizeError = error?.message?.includes('Body exceeded') || error?.message?.includes('Too Large');
       toast({
         title: isSizeError ? "Paper Too Large" : "Evaluation Failed",
         description: isSizeError 
