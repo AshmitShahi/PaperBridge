@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpen, Bookmark, Home, LogOut, User as UserIcon } from "lucide-react";
+import { BookOpen, Bookmark, Home, LogOut, User as UserIcon, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUser, useAuth } from "@/firebase";
 import { initiateAnonymousSignIn } from "@/firebase/non-blocking-login";
@@ -54,6 +54,9 @@ export function Navbar() {
           <Link href="/" className="text-sm font-medium hover:text-accent flex items-center gap-1.5 transition-colors">
             <Home className="h-4 w-4" /> Home
           </Link>
+          <Link href="/evaluate" className="text-sm font-medium hover:text-accent flex items-center gap-1.5 transition-colors">
+            <Target className="h-4 w-4" /> Evaluator
+          </Link>
           <Link href="/bookmarks" className="text-sm font-medium hover:text-accent flex items-center gap-1.5 transition-colors">
             <Bookmark className="h-4 w-4" /> Bookmarks
           </Link>
@@ -86,6 +89,12 @@ export function Navbar() {
                     <Link href="/bookmarks" className="cursor-pointer">
                       <Bookmark className="mr-2 h-4 w-4" />
                       <span>My Collection</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/evaluate" className="cursor-pointer">
+                      <Target className="mr-2 h-4 w-4" />
+                      <span>Paper Evaluator</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
