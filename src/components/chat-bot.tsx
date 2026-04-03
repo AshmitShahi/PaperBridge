@@ -39,9 +39,14 @@ export function ChatBot() {
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Auto-scroll to bottom whenever messages or loading state changes
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTo(0, scrollRef.current.scrollHeight);
+      const scrollContainer = scrollRef.current;
+      scrollContainer.scrollTo({
+        top: scrollContainer.scrollHeight,
+        behavior: "smooth"
+      });
     }
   }, [messages, isLoading]);
 
@@ -87,7 +92,7 @@ export function ChatBot() {
       {/* Chat Window */}
       {isOpen && (
         <Card className="w-[90vw] md:w-[420px] h-[600px] shadow-2xl border-accent/20 flex flex-col animate-in slide-in-from-bottom-5 duration-300 rounded-[2rem] overflow-hidden">
-          <CardHeader className="bg-primary p-4 flex flex-row items-center justify-between space-y-0">
+          <CardHeader className="bg-primary p-4 flex flex-row items-center justify-between space-y-0 shrink-0">
             <div className="flex items-center gap-2 text-white">
               <div className="bg-white/20 p-1.5 rounded-lg">
                 <BrainCircuit className="h-5 w-5" />
@@ -110,12 +115,12 @@ export function ChatBot() {
             </Button>
           </CardHeader>
           
-          <CardContent className="flex-1 p-0 bg-secondary/30">
-            <ScrollArea className="h-full p-4" viewportRef={scrollRef}>
-              <div className="space-y-6">
+          <CardContent className="flex-1 p-0 bg-secondary/30 min-h-0 overflow-hidden">
+            <ScrollArea className="h-full" viewportRef={scrollRef}>
+              <div className="p-4 space-y-6">
                 {messages.map((msg, i) => (
                   <div key={i} className={cn(
-                    "flex flex-col gap-2",
+                    "flex flex-col gap-2 animate-fade-in",
                     msg.role === "user" ? "items-end" : "items-start"
                   )}>
                     <div className={cn(
@@ -128,7 +133,7 @@ export function ChatBot() {
                     </div>
                     
                     {msg.role === "assistant" && msg.papers && msg.papers.length > 0 && (
-                      <div className="w-full mt-2 space-y-2 animate-fade-in">
+                      <div className="w-full mt-2 space-y-2">
                         <div className="flex items-center gap-2 px-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                           <BookOpen className="h-3 w-3" />
                           Source Papers
@@ -157,18 +162,20 @@ export function ChatBot() {
                   </div>
                 ))}
                 {isLoading && (
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-start gap-3 animate-fade-in">
                     <div className="bg-white border p-3 rounded-2xl rounded-tl-none shadow-sm flex items-center gap-2">
                       <Loader2 className="h-4 w-4 animate-spin text-accent" />
                       <span className="text-sm text-muted-foreground">Analyzing research...</span>
                     </div>
                   </div>
                 )}
+                {/* Extra space at the bottom to ensure last message is fully visible */}
+                <div className="h-4" />
               </div>
             </ScrollArea>
           </CardContent>
 
-          <CardFooter className="p-4 bg-white border-t">
+          <CardFooter className="p-4 bg-white border-t shrink-0">
             <form 
               onSubmit={(e) => { e.preventDefault(); handleSend(); }} 
               className="flex w-full items-center gap-2"
