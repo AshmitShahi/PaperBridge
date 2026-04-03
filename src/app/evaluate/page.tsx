@@ -25,8 +25,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-// Set a safe limit for the client side. 
-// Note: Base64 encoding adds ~33% overhead, so a 15MB file becomes ~20MB.
+// Increased limit to 15MB to ensure PDF base64 overhead doesn't trip up the client check.
 const MAX_FILE_SIZE = 15 * 1024 * 1024; 
 
 export default function PaperEvaluatorPage() {
@@ -144,16 +143,16 @@ export default function PaperEvaluatorPage() {
     } catch (error: any) {
       console.error("Evaluation Error:", error);
       
-      // Detailed error detection for Server Action limits
       const isSizeError = 
         error?.message?.toLowerCase().includes('limit') || 
         error?.message?.toLowerCase().includes('large') ||
-        error?.message?.toLowerCase().includes('exceeded');
+        error?.message?.toLowerCase().includes('exceeded') ||
+        error?.status === 413;
 
       toast({
         title: isSizeError ? "Submission Limit" : "Evaluation Failed",
         description: isSizeError 
-          ? "The server rejected the request due to size. If this persists, please try a smaller PDF or a text abstract."
+          ? "The server rejected the request due to size limits. Please try a smaller PDF or use the text abstract field."
           : "An error occurred while analyzing the paper. Please try again.",
         variant: "destructive",
       });
