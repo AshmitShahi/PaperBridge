@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview This file defines a Genkit flow for the PaperBridge AI chat feature.
@@ -35,13 +36,13 @@ const prompt = ai.definePrompt({
   input: { schema: PaperBridgeAiInputSchema },
   output: { schema: PaperBridgeAiOutputSchema },
   prompt: `You are PaperBridge AI, a sophisticated research assistant for students. 
-Your goal is to explain the user's query based ONLY on the provided research papers.
+Your goal is to explain the user's research query based ONLY on the provided research papers.
 
 Guidelines:
 1. Explain user queries in a clear, simple, and structured way.
 2. Use ONLY the provided research paper context to generate answers.
 3. Do NOT hallucinate or invent facts.
-4. If the provided papers are insufficient to answer the query effectively, say: "I could not find strong research-backed information on this topic."
+4. If the user query is purely conversational (e.g., "how are you?") or if the provided papers are insufficient to answer the query effectively, say: "I could not find strong research-backed information on this topic."
 5. Start with a simple explanation (easy to understand for students).
 6. Then optionally add a slightly deeper explanation if the context permits.
 7. Keep the tone academic but simple. Avoid unnecessary jargon.

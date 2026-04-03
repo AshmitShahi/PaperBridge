@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -50,12 +51,35 @@ export function ChatBot() {
     }
   }, [messages, isLoading]);
 
+  const isGreeting = (text: string) => {
+    const greetings = ["hi", "hello", "hey", "hola", "greetings", "good morning", "good afternoon", "good evening", "howdy"];
+    const thanks = ["thanks", "thank you", "thx", "appreciated", "cheers"];
+    const lowered = text.toLowerCase().trim().replace(/[^\w\s]/gi, '');
+    return greetings.includes(lowered) || thanks.includes(lowered);
+  };
+
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
 
     const userQuery = input.trim();
     setInput("");
     setMessages(prev => [...prev, { role: "user", content: userQuery }]);
+    
+    // Check if it's just a greeting or thank you
+    if (isGreeting(userQuery)) {
+      const lowered = userQuery.toLowerCase();
+      let response = "Hello! How can I help you with your research today?";
+      if (lowered.includes("thank") || lowered.includes("thx")) {
+        response = "You're very welcome! Let me know if you need help exploring more research topics.";
+      }
+      
+      setMessages(prev => [...prev, { 
+        role: "assistant", 
+        content: response 
+      }]);
+      return;
+    }
+
     setIsLoading(true);
 
     try {
